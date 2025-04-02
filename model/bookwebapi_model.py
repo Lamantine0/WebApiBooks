@@ -10,3 +10,11 @@ class Book_DTO(BaseModel):
     publication_year : int
 
     genre : str
+
+
+class Book_genre(BaseModel):
+
+    
+    title : str
+
+    genre : str    

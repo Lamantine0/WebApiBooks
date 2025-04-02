@@ -1,11 +1,11 @@
 
 from fastapi import FastAPI
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update, values
 from contextDB.model import Book, User, UserGetBook
 from contextDB.settings import settings_db
 from fastapi import HTTPException
-from model.bookwebapi_model import Book_DTO
-
+from model.bookwebapi_model import Book_DTO, Book_genre
+from typing import List
 
 app = FastAPI()
 
@@ -46,7 +46,7 @@ class BooksWebApi:
     @app.post("/create_book_DTO/", tags=["Создание книги c DTO"])
     async def create_book(book : Book_DTO):
 
-        with settings_db.session() as db:
+        async  with settings_db.session() as db:
 
             create_book = Book(
 
@@ -61,7 +61,7 @@ class BooksWebApi:
 
             db.add(create_book)
 
-            db.commit()
+            await  db.commit()
 
             return {
                 "title": create_book.title,
@@ -121,8 +121,6 @@ class BooksWebApi:
 
        async with settings_db.session() as db:
             
-
-
             user = await db.execute(select(User).where(User.user_name == user_name, User.id == User.id))
 
             get_user = user.scalars().first()
@@ -135,17 +133,15 @@ class BooksWebApi:
 
             get_book = book.scalars().first()
 
-            if not get_book:
+            if not get_book:  
 
                 raise HTTPException(status_code=404, detail="Книга не найдена")
             
 
+            if get_book.title == title:
 
-            if get_book == title:
-
-                raise HTTPException(status_code=404 , detail="Книга уже взята")
-
-
+                raise HTTPException(status_code=409, detail= "Данная книга на руках у пользователя")
+        
             user_get_book = UserGetBook(title=title, user_name=user_name, user_id=get_user.id, book_id=get_book.id)
 
             db.add(user_get_book)
@@ -182,3 +178,53 @@ class BooksWebApi:
             }
             
 
+    @app.get("/sort_by_genre/{genre}", tags=["Сортировка по жанру"], response_model=List[Book_genre])
+    async def sort_genre(genre : str):
+
+        async with settings_db.session() as db:
+
+            book_genre = await db.execute(
+                select(Book).where(Book.genre == genre).order_by(Book.genre))
+
+            sort_book_genge = book_genre.scalars().all()
+
+            if not sort_book_genge:
+
+                raise HTTPException(status_code=404, detail="Книги с таким жанром не найдены")
+            
+            return sort_book_genge
+
+                
+                
+
+           
+    @app.post("/update_book/{id}", tags=["Обновление информации о книге"])
+    async def update_book(id : int, author: str , title: str, publication_year: int, genre: str):
+
+        async with settings_db.session() as db:
+
+            update_book = await db.execute(
+                update(Book)
+                .where(Book.id == id)
+                .values(author = author, title = title, publication_year = publication_year, genre = genre))
+                        
+            if not update_book:
+
+                raise HTTPException(status_code=404, detail="Ошибка , данные книги не обновленны")
+            
+
+            await db.commit()
+
+            
+
+            return "Запись успешна обновлена"
+            
+
+
+
+
+
+
+
+
+            
