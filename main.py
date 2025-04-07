@@ -1,11 +1,14 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select, delete, update, values
 from contextDB.model import Book, User, UserGetBook
 from contextDB.settings import settings_db
-from fastapi import HTTPException
+from fastapi import HTTPException 
 from model.bookwebapi_model import Book_DTO, Book_genre
 from typing import List
+from http import HTTPStatus
+from UI.settings import page
 
 app = FastAPI()
 
@@ -114,6 +117,27 @@ class BooksWebApi:
                 "ID" : new_user.id,
                 "Пользователь" : new_user.user_name
             }            
+
+
+    @app.get("/login_form", tags=["Вход пользователя в систему"])
+    async def login_page(user_name : str, request: Request):
+
+        async with settings_db.session() as db:
+
+            user = await db.execute(select(User).where(User.user_name == user_name))
+
+            get_user_login = user.scalars().first()
+
+
+            if not get_user_login:
+
+                raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="пользователь не найден")
+            
+
+            return page.TemplateResponse()
+
+
+
 
     @app.post("/get_book_library/", tags=["Получение книги в библиотеке"])
     async def take_book(user_name : str , title : str):
