@@ -1,6 +1,6 @@
 
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select, delete, update, values
 from contextDB.model import Book, User, UserGetBook
 from contextDB.settings import settings_db
@@ -118,9 +118,15 @@ class BooksWebApi:
                 "Пользователь" : new_user.user_name
             }            
 
+    # Форма ввода пользователя 
+    @app.get("/login", response_class=HTMLResponse)
+    async def login_form(request : Request):
 
-    @app.get("/login_form", tags=["Вход пользователя в систему"])
-    async def login_page(user_name : str, request: Request):
+       return page.TemplateResponse("login.html", {"request": request})
+
+    @app.post("/login", tags=["Вход пользователя в систему"])
+    async def login(request: Request, user_name : str = Form()):
+
 
         async with settings_db.session() as db:
 
@@ -131,10 +137,17 @@ class BooksWebApi:
 
             if not get_user_login:
 
-                raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="пользователь не найден")
+                return page.TemplateResponse("login.html", {"request": request, "error" : "Пользователь не найден"}, status_code=HTTPStatus.BAD_REQUEST)
+            
             
 
-            return page.TemplateResponse()
+            return page.TemplateResponse(
+                "welcome.html", 
+                {
+                    "request": request,
+                    "username": user_name
+                }
+            ) 
 
 
 

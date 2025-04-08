@@ -59,8 +59,8 @@
         {% if error %}
             <p class="error">{{ error }}</p>
         {% endif %}
-        <form action="/login_form" method="GET">
-            <input type="text" name="username" placeholder="Введите ваше имя" required>
+        <form action="/login" method="GET">
+            <input type="text" name="user_name" placeholder="Введите ваше имя" required>
             <button type="submit">Войти</button>
         </form>
     </div>
